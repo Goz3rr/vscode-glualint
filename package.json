@@ -5,9 +5,9 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git://github.com/goz3rr/vscode-glualint.git"
+        "url": "https://github.com/goz3rr/vscode-glualint.git"
     },
-    "version": "0.1.1",
+    "version": "0.1.2",
     "publisher": "goz3rr",
     "engines": {
         "vscode": "^1.17.0"
