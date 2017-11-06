@@ -7,8 +7,8 @@
         "type": "git",
         "url": "git://github.com/goz3rr/vscode-glualint.git"
     },
-    "version": "0.1.0",
-    "publisher": "Goz3rr",
+    "version": "0.1.1",
+    "publisher": "goz3rr",
     "engines": {
         "vscode": "^1.17.0"
     },

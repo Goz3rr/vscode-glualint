@@ -35,7 +35,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        let args = ['stdin'];
+        let args = ['--stdin'];
         let options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
         var lintProcess: ChildProcess = spawn('glualint', args, options);
 
