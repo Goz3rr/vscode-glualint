@@ -1,3 +1,3 @@
-# glua-linter README
+# vscode-glualint README
 
 glualint for vscode
