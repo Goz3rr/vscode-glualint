@@ -7,7 +7,7 @@
         "type": "git",
         "url": "https://github.com/goz3rr/vscode-glualint.git"
     },
-    "version": "0.1.3",
+    "version": "0.2.0",
     "publisher": "goz3rr",
     "engines": {
         "vscode": "^1.17.0"
@@ -19,6 +19,36 @@
         "onLanguage:glua"
     ],
     "main": "./out/extension",
+    "contributes": {
+        "configuration": {
+            "title": "glualint",
+            "properties": {
+                "glualint.linter": {
+                    "type": "string",
+                    "default": "glualint",
+                    "description": "Points to the glualint executable"
+                },
+                "glualint.activeLanguages": {
+                    "type": "array",
+                    "default": [
+                        "glua",
+                        "lua"
+                    ],
+                    "description": "Languages IDs to activate the linter for"
+                },
+                "glualint.run": {
+                    "type": "string",
+                    "enum": [
+                        "onSave",
+                        "onType",
+                        "manual"
+                    ],
+                    "default": "onType",
+                    "description": "Run the linter on save (onSave), on type (onType), or manually with a command (manual)"
+                }
+            }
+        }
+    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",

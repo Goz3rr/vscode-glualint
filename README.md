@@ -11,4 +11,8 @@ glualint for vscode
 The linter should now be active for any lua and glua files
 
 ## Configuration
-None yet, see [configuring glualint](https://github.com/FPtje/GLuaFixer/blob/master/README.md#configuring-glualint)
+`glualint.linter`: Points to the glualint executable  
+`glualint.activeLanguages`: Languages IDs to activate the linter for  
+`glualint.run`: When to run the linter executable
+
+Also see [configuring glualint](https://github.com/FPtje/GLuaFixer/blob/master/README.md#configuring-glualint)
