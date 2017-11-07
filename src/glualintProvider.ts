@@ -68,7 +68,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                     let text = match[7];
 
                     var range = new vscode.Range(line, col, endLine, endCol);
-                    diagnostics.push(new vscode.Diagnostic(range, text, type == "Warning" ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error));
+                    diagnostics.push(new vscode.Diagnostic(range, text, type == 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error));
                 }
 
                 if (diagnostics.length == 0) {
