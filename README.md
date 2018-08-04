@@ -1,7 +1,7 @@
 # vscode-glualint
-
-
 glualint for vscode
+
+![Screenshot](https://i.imgur.com/c3PxJaT.png)
 
 ## Installing
 1. Install this extension
@@ -11,8 +11,12 @@ glualint for vscode
 The linter should now be active for any lua and glua files
 
 ## Configuration
-`glualint.linter`: Points to the glualint executable  
-`glualint.activeLanguages`: Languages IDs to activate the linter for  
-`glualint.run`: When to run the linter executable
+`glualint.linter`: Points to the glualint executable, defaults to `glualint`  
+`glualint.activeLanguages`: Languages IDs to activate the linter for (`lua` and `glua` are supported, defaults to both)  
+`glualint.run`: When to run the linter executable (`onSave` or `onType`, defaults to `onType`)
 
 Also see [configuring glualint](https://github.com/FPtje/GLuaFixer/blob/master/README.md#configuring-glualint)
+
+## Formatter
+This extension also integrates glualint's pretty printing functionality.  
+To format your code simply use vscode's built in format document or format selection actions.
