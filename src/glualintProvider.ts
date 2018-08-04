@@ -1,8 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import * as path from 'path';
-import { spawn, ChildProcess } from 'child_process';
+import LintProcess from './LintProcess';
 
 const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: - line (\d+), column (\d+))?: (.+)/gm;
 
@@ -47,36 +46,16 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        const executable = config.get<string>('linter');
         const args = ['--stdin'];
-        const options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
-        const lintProcess: ChildProcess = spawn(executable, args, options);
+        const lintProcess: LintProcess = new LintProcess(args);
 
-        lintProcess.on('error', (error: any) => {
-            if (error.code === 'ENOENT') {
-                vscode.window.showErrorMessage(`Failed to find '${executable}'. Are you sure it's in your path?`);
-            } else {
-                vscode.window.showErrorMessage(`${executable} error: ${error}`);
-            }
-        });
-
-        if (lintProcess.pid) {
-            let data = '';
-
-            lintProcess.stdout.on('data', buffer => {
-                data += buffer;
-            });
-
-            lintProcess.stderr.on('data', buffer => {
-                data += buffer;
-            });
-
-            lintProcess.on('exit', (code, signal) => {
+        if (lintProcess.Process.pid) {
+            lintProcess.Process.on('exit', () => {
                 const diagnostics: vscode.Diagnostic[] = [];
 
                 let match: RegExpExecArray;
                 // tslint:disable-next-line:no-conditional-assignment
-                while ((match = OUTPUT_REGEXP.exec(data)) !== null) {
+                while ((match = OUTPUT_REGEXP.exec(lintProcess.StdOut)) !== null) {
                     // let file = match[1];
                     const type = match[2];
                     const line = parseInt(match[3], 10) - 1;
@@ -96,7 +75,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
             });
 
-            lintProcess.stdin.end(new Buffer(doc.getText()));
+            lintProcess.Process.stdin.end(new Buffer(doc.getText()));
         }
     }
 }
