@@ -22,25 +22,25 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
     }
 
     public provideDocumentFormattingEdits(document: vscode.TextDocument, options: vscode.FormattingOptions, token: vscode.CancellationToken): vscode.ProviderResult<vscode.TextEdit[]> {
-        const edits = this.formatDocument(document);
+        const edits = this.formatDocument(document, options);
         return edits;
     }
 
     public provideDocumentRangeFormattingEdits(document: vscode.TextDocument, range: vscode.Range, options: vscode.FormattingOptions, token: vscode.CancellationToken): vscode.ProviderResult<vscode.TextEdit[]> {
-        return this.formatDocument(document, range);
+        return this.formatDocument(document, options, range);
     }
 
-    private formatDocument(doc: vscode.TextDocument, range?: vscode.Range): Promise<vscode.TextEdit[]> {
+    private formatDocument(doc: vscode.TextDocument, options: vscode.FormattingOptions, range?: vscode.Range): Promise<vscode.TextEdit[]> {
         if (range === undefined) {
             range = utils.fullDocumentRange(doc);
         }
 
-        const args = ['--pretty-print'];
+        const indentation = options.insertSpaces ? ' '.repeat(options.tabSize) : '\t';
+        const args = ['--pretty-print', `--indentation='${indentation}'`];
         const lintProcess: LintProcess = new LintProcess(args);
 
         if (lintProcess.Process.pid) {
             return new Promise<vscode.TextEdit[]>(resolve => {
-
                 lintProcess.Process.on('exit', () => {
                     resolve([vscode.TextEdit.replace(range, lintProcess.StdOut)]);
                 });
