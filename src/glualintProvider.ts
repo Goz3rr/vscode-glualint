@@ -12,6 +12,10 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
+        subscriptions.push(vscode.commands.registerTextEditorCommand('glualint.lint', textEditor => {
+            this.lintDocument(textEditor.document);
+        }));
+
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
 
         const config = vscode.workspace.getConfiguration('glualint');

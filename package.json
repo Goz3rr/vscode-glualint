@@ -18,10 +18,15 @@
     ],
     "activationEvents": [
         "onLanguage:lua",
-        "onLanguage:glua"
+        "onLanguage:glua",
+        "onCommand:glualint.lint"
     ],
     "main": "./out/extension",
     "contributes": {
+        "commands": [{
+            "command": "glualint.lint",
+            "title": "Glualint: Lint Document"
+        }],
         "configuration": {
             "title": "glualint",
             "properties": {
