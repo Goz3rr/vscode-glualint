@@ -7,6 +7,9 @@
         "type": "git",
         "url": "https://github.com/goz3rr/vscode-glualint.git"
     },
+    "bugs": {
+        "url": "https://github.com/goz3rr/vscode-glualint/issues"
+    },
     "version": "0.4.1",
     "publisher": "goz3rr",
     "engines": {
