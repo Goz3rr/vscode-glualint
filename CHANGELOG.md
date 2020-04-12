@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-04-12
+### Fixed
+- Fixed linting being cleared when opening 0 problem files (#3)
+
 ## [0.4.1] - 2018-08-05
 ### Added
 - Use vscode indentation settings for pretty printing
@@ -41,7 +45,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.0.1] - 2017-11-06
 - Initial Version
 
-[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/Goz3rr/vscode-glualint/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.2.0...v0.3.0
