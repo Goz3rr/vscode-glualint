@@ -45,7 +45,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
                     resolve([vscode.TextEdit.replace(range, lintProcess.StdOut)]);
                 });
 
-                lintProcess.Process.stdin.end(new Buffer(doc.getText(range)));
+                lintProcess.Process.stdin.end(Buffer.from(doc.getText(range)));
             });
         }
 

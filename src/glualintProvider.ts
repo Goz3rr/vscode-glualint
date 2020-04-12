@@ -79,7 +79,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
             });
 
-            lintProcess.Process.stdin.end(new Buffer(doc.getText()));
+            lintProcess.Process.stdin.end(Buffer.from(doc.getText()));
         }
     }
 }
