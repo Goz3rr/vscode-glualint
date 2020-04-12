@@ -73,7 +73,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
 
                 if (diagnostics.length === 0) {
-                    this.diagnosticCollection.clear();
+                    this.diagnosticCollection.delete(doc.uri);
                 } else {
                     this.diagnosticCollection.set(doc.uri, diagnostics);
                 }
