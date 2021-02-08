@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.6.0] - 2021-02-08
+### Fixed
+- Fixed pretty print truncating files when `prettyprint_rejectInvalidCode` is enabled
+- Support for multiple workspaces
+
 ## [0.5.0] - 2020-04-12
 ### Fixed
 - Fixed linting being cleared when opening 0 problem files (#3)
