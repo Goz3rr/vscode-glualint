@@ -7,10 +7,11 @@ export default class LintProcess {
     public StdOut: string = '';
     public StdErr: string = '';
 
-    constructor(args: string[] = []) {
+    constructor(doc: vscode.TextDocument, args: string[] = []) {
         const config = vscode.workspace.getConfiguration('glualint');
         const executable = config.get<string>('linter');
-        const options = vscode.workspace.rootPath ? { cwd: vscode.workspace.rootPath } : undefined;
+        const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
+        const options = folder ? { cwd: folder.uri.fsPath } : undefined;
 
         this.Process = spawn(executable, args, options);
 

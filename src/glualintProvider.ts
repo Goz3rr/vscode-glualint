@@ -6,35 +6,68 @@ import LintProcess from './LintProcess';
 const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: - line (\d+), column (\d+))?: (.+)/gm;
 
 export default class GLuaLintingProvider implements vscode.Disposable {
-
     private diagnosticCollection: vscode.DiagnosticCollection;
 
     public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
+        this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
+
         subscriptions.push(vscode.commands.registerTextEditorCommand('glualint.lint', textEditor => {
             this.lintDocument(textEditor.document);
         }));
 
-        this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
+        vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument, this, subscriptions);
+        vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument, this, subscriptions);
+        vscode.window.onDidChangeActiveTextEditor(this.onChangeActiveTexteditor, this, subscriptions);
+        vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument, this, subscriptions);
+        vscode.workspace.onDidSaveTextDocument(this.onSaveTextDocument, this, subscriptions);
 
         const config = vscode.workspace.getConfiguration('glualint');
+        const runOn = config.get<string>('run');
 
-        if (config.get<string>('run') !== 'manual') {
-            vscode.workspace.onDidOpenTextDocument(this.lintDocument, this, subscriptions);
-            vscode.workspace.onDidCloseTextDocument(doc => {
-                this.diagnosticCollection.delete(doc.uri);
-            }, null, subscriptions);
-
-            vscode.window.onDidChangeActiveTextEditor(editor => this.lintDocument(editor.document), subscriptions);
-
-            if (config.get<string>('run') === 'onType') {
-                vscode.workspace.onDidChangeTextDocument(event => this.lintDocument(event.document), subscriptions);
-            } else {
-                vscode.workspace.onDidSaveTextDocument(this.lintDocument, this, subscriptions);
-            }
-
+        if (runOn !== 'manual') {
             vscode.workspace.textDocuments.forEach(this.lintDocument, this);
+        }
+    }
+
+    private onOpenTextDocument(doc: vscode.TextDocument) {
+        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
+        const runOn = config.get<string>('run');
+
+        if (runOn !== 'manual') {
+            this.lintDocument(doc);
+        }
+    }
+
+    private onCloseTextDocument(doc: vscode.TextDocument) {
+        this.diagnosticCollection.delete(doc.uri);
+    }
+
+    private onChangeActiveTexteditor(editor: vscode.TextEditor) {
+        const config = vscode.workspace.getConfiguration('glualint', editor.document.uri);
+        const runOn = config.get<string>('run');
+
+        if (runOn !== 'manual') {
+            this.lintDocument(editor.document);
+        }
+    }
+
+    private onChangeTextDocument(event: vscode.TextDocumentChangeEvent) {
+        const config = vscode.workspace.getConfiguration('glualint', event.document.uri);
+        const runOn = config.get<string>('run');
+
+        if (runOn === 'onType') {
+            this.lintDocument(event.document);
+        }
+    }
+
+    private onSaveTextDocument(doc: vscode.TextDocument) {
+        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
+        const runOn = config.get<string>('run');
+
+        if (runOn === 'onSave') {
+            this.lintDocument(doc);
         }
     }
 
@@ -51,7 +84,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
 
         const args = ['--stdin'];
-        const lintProcess: LintProcess = new LintProcess(args);
+        const lintProcess: LintProcess = new LintProcess(doc, args);
 
         if (lintProcess.Process.pid) {
             lintProcess.Process.on('exit', () => {
