@@ -41,8 +41,9 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
         if (lintProcess.Process.pid) {
             return new Promise<vscode.TextEdit[]>(resolve => {
-                lintProcess.Process.on('exit', () => {
-                    if (lintProcess.StdOut === '') {
+                lintProcess.Process.on('exit', (code) => {
+                    // Check for empty StdOut because < glualint 1.17.2 does not set exit code
+                    if (code > 0 || lintProcess.StdOut === '') {
                         vscode.window.showErrorMessage('Failed to pretty print code, most likely due to syntax errors.');
                         resolve([]);
                         return;
