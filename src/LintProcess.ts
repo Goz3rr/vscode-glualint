@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { spawn, ChildProcess } from 'child_process';
+import * as path from 'path';
 
 export default class LintProcess {
     public Process: ChildProcess;
@@ -10,8 +11,12 @@ export default class LintProcess {
     constructor(doc: vscode.TextDocument, args: string[] = []) {
         const config = vscode.workspace.getConfiguration('glualint');
         const executable = config.get<string>('linter');
-        const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
-        const options = folder ? { cwd: folder.uri.fsPath } : undefined;
+        const options = {};
+
+        // Untitled files cannot have a folder
+        if (doc.uri.scheme !== 'untitled') {
+            options['cwd'] = path.dirname(doc.uri.fsPath);
+        }
 
         this.Process = spawn(executable, args, options);
 
