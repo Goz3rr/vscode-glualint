@@ -10,7 +10,7 @@
     "bugs": {
         "url": "https://github.com/goz3rr/vscode-glualint/issues"
     },
-    "version": "0.6.0",
+    "version": "0.7.0",
     "publisher": "goz3rr",
     "engines": {
         "vscode": "^1.44.0"
