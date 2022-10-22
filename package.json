@@ -2,6 +2,7 @@
     "name": "vscode-glualint",
     "displayName": "vscode-glualint",
     "description": "glualint for vscode",
+    "keywords": ["glualint", "multi-root ready"],
     "license": "MIT",
     "repository": {
         "type": "git",
@@ -24,6 +25,12 @@
         "onLanguage:glua",
         "onCommand:glualint.lint"
     ],
+    "capabilities": {
+        "virtualWorkspaces":{
+            "supported": "limited",
+            "description": "In virtual workspaces, glualint is unable to set a working directory and will not respect any config files from the virtual workspace. Put the config file in your home directory instead if required."
+        }
+    },
     "main": "./out/extension",
     "contributes": {
         "commands": [

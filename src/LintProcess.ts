@@ -13,8 +13,8 @@ export default class LintProcess {
         const executable = config.get<string>('linter');
         const options = {};
 
-        // Untitled files cannot have a folder
-        if (doc.uri.scheme !== 'untitled') {
+        // uri.fsPath is only valid for the file scheme
+        if (doc.uri.scheme === 'file') {
             options['cwd'] = path.dirname(doc.uri.fsPath);
         }
 
