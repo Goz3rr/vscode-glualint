@@ -2,7 +2,10 @@
     "name": "vscode-glualint",
     "displayName": "vscode-glualint",
     "description": "glualint for vscode",
-    "keywords": ["glualint", "multi-root ready"],
+    "keywords": [
+        "glualint",
+        "multi-root ready"
+    ],
     "license": "MIT",
     "repository": {
         "type": "git",
@@ -11,7 +14,7 @@
     "bugs": {
         "url": "https://github.com/goz3rr/vscode-glualint/issues"
     },
-    "version": "0.7.0",
+    "version": "0.8.0",
     "publisher": "goz3rr",
     "engines": {
         "vscode": "^1.44.0"
@@ -26,7 +29,7 @@
         "onCommand:glualint.lint"
     ],
     "capabilities": {
-        "virtualWorkspaces":{
+        "virtualWorkspaces": {
             "supported": "limited",
             "description": "In virtual workspaces, glualint is unable to set a working directory and will not respect any config files from the virtual workspace. Put the config file in your home directory instead if required."
         }
