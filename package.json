@@ -54,6 +54,8 @@
                     "type": "array",
                     "default": [
                         "glua",
+			"Glua",
+			"GLua",
                         "lua"
                     ],
                     "description": "Languages IDs to activate the linter for"
