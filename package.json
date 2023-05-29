@@ -47,11 +47,13 @@
             "properties": {
                 "glualint.linter": {
                     "type": "string",
+                    "scope": "machine-overridable",
                     "default": "glualint",
                     "description": "Points to the glualint executable"
                 },
                 "glualint.activeLanguages": {
                     "type": "array",
+                    "scope": "window",
                     "default": [
                         "glua",
                         "lua"
@@ -60,6 +62,7 @@
                 },
                 "glualint.run": {
                     "type": "string",
+                    "scope": "resource",
                     "enum": [
                         "onSave",
                         "onType",

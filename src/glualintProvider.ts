@@ -23,7 +23,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument, this, subscriptions);
         vscode.workspace.onDidSaveTextDocument(this.onSaveTextDocument, this, subscriptions);
 
-        const config = vscode.workspace.getConfiguration('glualint');
+        const config = vscode.workspace.getConfiguration('glualint', null);
         const runOn = config.get<string>('run');
 
         if (runOn !== 'manual') {
@@ -45,6 +45,11 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onChangeActiveTexteditor(editor: vscode.TextEditor) {
+        // onDidChangeActiveTextEditor can be called with no editor, we can't do anything then
+        if (editor === undefined) {
+            return;
+        }
+
         const config = vscode.workspace.getConfiguration('glualint', editor.document.uri);
         const runOn = config.get<string>('run');
 
