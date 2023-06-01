@@ -88,7 +88,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        const args = ['--stdin'];
+        const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(doc, args);
 
         if (lintProcess.Process.pid) {
