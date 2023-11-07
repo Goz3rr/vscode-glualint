@@ -41,6 +41,17 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
             }
         }
+
+        const allFiles = config.get<boolean>('all_files');
+        if ( allFiles )
+        {
+            const self = this;
+            // HACK: bypasses activeLanguages setting!
+            vscode.workspace.findFiles("**/*.lua").then( function(res) {
+                // TODO: Rate limit this?
+                res.forEach( (fileUri) => self.lintUri(fileUri) );
+            } );
+        }
     }
 
     private onOpenTextDocument(doc: vscode.TextDocument) {
@@ -53,7 +64,12 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onCloseTextDocument(doc: vscode.TextDocument) {
-        this.diagnosticCollection.delete(doc.uri);
+        const config = vscode.workspace.getConfiguration('glualint', null);
+        const allFiles = config.get<boolean>('all_files');
+
+        if (!allFiles) {
+            this.diagnosticCollection.delete(doc.uri);
+        }
     }
 
     private onChangeActiveTexteditor(editor: vscode.TextEditor) {
@@ -100,8 +116,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
+        this.lintUri(doc.uri,  doc.getText());
+    }
+
+    private lintUri(docUri: vscode.Uri, text: string = null) {
+
         const args = ['lint', '--stdin'];
-        const lintProcess: LintProcess = new LintProcess(doc, args);
+        const lintProcess: LintProcess = new LintProcess(docUri, args);
 
         if (lintProcess.Process.pid) {
             lintProcess.Process.on('exit', () => {
@@ -123,13 +144,23 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
 
                 if (diagnostics.length === 0) {
-                    this.diagnosticCollection.delete(doc.uri);
+                    this.diagnosticCollection.delete(docUri);
                 } else {
-                    this.diagnosticCollection.set(doc.uri, diagnostics);
+                    this.diagnosticCollection.set(docUri, diagnostics);
                 }
             });
 
-            lintProcess.Process.stdin.end(Buffer.from(doc.getText()));
+            if ( text == null )
+            {
+                vscode.workspace.fs.readFile(docUri).then( function(data) {
+                    lintProcess.Process.stdin.end(data);
+                } );
+            }
+            else
+            {
+                lintProcess.Process.stdin.end(Buffer.from(text));
+            }
+
         }
     }
 }

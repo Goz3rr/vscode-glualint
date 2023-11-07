@@ -8,14 +8,14 @@ export default class LintProcess {
     public StdOut: string = '';
     public StdErr: string = '';
 
-    constructor(doc: vscode.TextDocument, args: string[] = []) {
+    constructor(docUri: vscode.Uri, args: string[] = []) {
         const config = vscode.workspace.getConfiguration('glualint');
         const executable = config.get<string>('linter');
         const options = {};
 
         // uri.fsPath is only valid for the file scheme
-        if (doc.uri.scheme === 'file') {
-            options['cwd'] = path.dirname(doc.uri.fsPath);
+        if (docUri.scheme === 'file') {
+            options['cwd'] = path.dirname(docUri.fsPath);
         }
 
         this.Process = spawn(executable, args, options);
