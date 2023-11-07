@@ -27,7 +27,19 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const runOn = config.get<string>('run');
 
         if (runOn !== 'manual') {
-            vscode.workspace.textDocuments.forEach(this.lintDocument, this);
+            for ( let grp of vscode.window.tabGroups.all )
+            {
+                for ( let tab of grp.tabs )
+                {
+                    if ( tab.input instanceof vscode.TabInputText )
+                    {
+                        // HACK: bypasses activeLanguages setting!
+                        if ( !tab.input.uri.fsPath.endsWith( ".lua" ) ) continue;
+
+                        this.lintUri( tab.input.uri );
+                    }
+                }
+            }
         }
     }
 
