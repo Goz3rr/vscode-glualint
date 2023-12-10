@@ -32,7 +32,14 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
     private formatDocument(doc: vscode.TextDocument, formatOptions: vscode.FormattingOptions, range?: vscode.Range): Promise<vscode.TextEdit[]> {
         if (range === undefined) {
+            // Format entire document.
             range = utils.fullDocumentRange(doc);
+        } else {
+            // If range is empty or the selected text is nothing but whitespaces skip
+            // formatting.
+            if(range.isEmpty || doc.getText(range).trim() == "") {
+                return;
+            }
         }
 
         const indentation = formatOptions.insertSpaces ? ' '.repeat(formatOptions.tabSize) : '\t';
