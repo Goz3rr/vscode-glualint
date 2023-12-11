@@ -27,8 +27,8 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const runOn = config.get<string>('run');
 
         if (runOn !== 'manual') {
-            for (let grp of vscode.window.tabGroups.all) {
-                for (let tab of grp.tabs) {
+            for (const grp of vscode.window.tabGroups.all) {
+                for (const tab of grp.tabs) {
                     if (tab.input instanceof vscode.TabInputText) {
                         // HACK: bypasses activeLanguages setting!
                         if (!tab.input.uri.fsPath.endsWith(".lua")) continue;
@@ -42,7 +42,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const allFiles = config.get<boolean>('allFiles');
         if (allFiles) {
             // HACK: bypasses activeLanguages setting!
-            let files = await vscode.workspace.findFiles("**/*.lua")
+            const files = await vscode.workspace.findFiles("**/*.lua")
             files.forEach((fileUri) => this.lintUri(fileUri));
         }
     }
@@ -144,7 +144,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             });
 
             if (text == null) {
-                let fileContents = await vscode.workspace.fs.readFile(docUri);
+                const fileContents = await vscode.workspace.fs.readFile(docUri);
                 lintProcess.Process.stdin.end(fileContents);
             } else {
                 lintProcess.Process.stdin.end(Buffer.from(text));
