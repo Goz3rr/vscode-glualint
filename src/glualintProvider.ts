@@ -8,7 +8,7 @@ const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: -
 export default class GLuaLintingProvider implements vscode.Disposable {
     private diagnosticCollection: vscode.DiagnosticCollection;
 
-    public activate(subscriptions: vscode.Disposable[]) {
+    public async activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
@@ -41,12 +41,9 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
         const allFiles = config.get<boolean>('all_files');
         if (allFiles) {
-            const self = this;
             // HACK: bypasses activeLanguages setting!
-            vscode.workspace.findFiles("**/*.lua").then(function(res) {
-                // TODO: Rate limit this?
-                res.forEach((fileUri) => self.lintUri(fileUri));
-            });
+            let files = await vscode.workspace.findFiles("**/*.lua")
+            files.forEach((fileUri) => this.lintUri(fileUri));
         }
     }
 
@@ -115,7 +112,8 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         this.lintUri(doc.uri, doc.getText());
     }
 
-    private lintUri(docUri: vscode.Uri, text: string = null) {
+    // TODO: Rate limit this function?
+    private async lintUri(docUri: vscode.Uri, text: string = null) {
         const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(docUri, args);
 
@@ -146,9 +144,8 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             });
 
             if (text == null) {
-                vscode.workspace.fs.readFile(docUri).then(function(data) {
-                    lintProcess.Process.stdin.end(data);
-                });
+                let fileContents = await vscode.workspace.fs.readFile(docUri);
+                lintProcess.Process.stdin.end(fileContents);
             } else {
                 lintProcess.Process.stdin.end(Buffer.from(text));
             }
