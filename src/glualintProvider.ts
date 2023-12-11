@@ -27,30 +27,26 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const runOn = config.get<string>('run');
 
         if (runOn !== 'manual') {
-            for ( let grp of vscode.window.tabGroups.all )
-            {
-                for ( let tab of grp.tabs )
-                {
-                    if ( tab.input instanceof vscode.TabInputText )
-                    {
+            for (let grp of vscode.window.tabGroups.all) {
+                for (let tab of grp.tabs) {
+                    if (tab.input instanceof vscode.TabInputText) {
                         // HACK: bypasses activeLanguages setting!
-                        if ( !tab.input.uri.fsPath.endsWith( ".lua" ) ) continue;
+                        if (!tab.input.uri.fsPath.endsWith(".lua")) continue;
 
-                        this.lintUri( tab.input.uri );
+                        this.lintUri(tab.input.uri);
                     }
                 }
             }
         }
 
         const allFiles = config.get<boolean>('all_files');
-        if ( allFiles )
-        {
+        if (allFiles) {
             const self = this;
             // HACK: bypasses activeLanguages setting!
-            vscode.workspace.findFiles("**/*.lua").then( function(res) {
+            vscode.workspace.findFiles("**/*.lua").then(function(res) {
                 // TODO: Rate limit this?
-                res.forEach( (fileUri) => self.lintUri(fileUri) );
-            } );
+                res.forEach((fileUri) => self.lintUri(fileUri));
+            });
         }
     }
 
@@ -116,11 +112,10 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        this.lintUri(doc.uri,  doc.getText());
+        this.lintUri(doc.uri, doc.getText());
     }
 
     private lintUri(docUri: vscode.Uri, text: string = null) {
-
         const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(docUri, args);
 
@@ -150,17 +145,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
             });
 
-            if ( text == null )
-            {
-                vscode.workspace.fs.readFile(docUri).then( function(data) {
+            if (text == null) {
+                vscode.workspace.fs.readFile(docUri).then(function(data) {
                     lintProcess.Process.stdin.end(data);
-                } );
-            }
-            else
-            {
+                });
+            } else {
                 lintProcess.Process.stdin.end(Buffer.from(text));
             }
-
         }
     }
 }
