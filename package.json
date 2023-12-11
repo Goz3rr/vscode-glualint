@@ -50,7 +50,7 @@
                     "type": "string",
                     "scope": "machine-overridable",
                     "default": "glualint",
-                    "description": "Points to the glualint executable"
+                    "markdownDescription": "Points to the `glualint` executable"
                 },
                 "glualint.activeLanguages": {
                     "type": "array",
@@ -59,7 +59,7 @@
                         "glua",
                         "lua"
                     ],
-                    "description": "Languages IDs to activate the linter for"
+                    "markdownDescription": "Languages IDs to activate the linter for"
                 },
                 "glualint.run": {
                     "type": "string",
@@ -70,13 +70,13 @@
                         "manual"
                     ],
                     "default": "onType",
-                    "description": "Run the linter on save (onSave), on type (onType), or manually with a command (manual)"
+                    "markdownDescription": "Run the linter on save (`onSave`), on type (`onType`), or manually with a command (`manual`)"
                 },
-                "glualint.all_files": {
+                "glualint.allFiles": {
                     "type": "boolean",
                     "scope": "window",
                     "default": false,
-                    "description": "Run the linter on all files in the workspace, even if they are closed. Bypasses glualint.activeLanguages setting."
+                    "markdownDescription": "Run the linter on all files in the workspace, even if they are closed. Bypasses `glualint.activeLanguages` setting."
                 }
             }
         }

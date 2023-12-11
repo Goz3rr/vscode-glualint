@@ -39,7 +39,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             }
         }
 
-        const allFiles = config.get<boolean>('all_files');
+        const allFiles = config.get<boolean>('allFiles');
         if (allFiles) {
             // HACK: bypasses activeLanguages setting!
             let files = await vscode.workspace.findFiles("**/*.lua")
@@ -58,7 +58,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
     private onCloseTextDocument(doc: vscode.TextDocument) {
         const config = vscode.workspace.getConfiguration('glualint', null);
-        const allFiles = config.get<boolean>('all_files');
+        const allFiles = config.get<boolean>('allFiles');
 
         if (!allFiles) {
             this.diagnosticCollection.delete(doc.uri);
@@ -112,7 +112,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         this.lintUri(doc.uri, doc.getText());
     }
 
-    // TODO: Rate limit this function?
+    // TODO: Rate limit this function? Reuse the linter process?
     private async lintUri(docUri: vscode.Uri, text: string = null) {
         const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(docUri, args);
