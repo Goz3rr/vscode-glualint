@@ -8,7 +8,7 @@ const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: -
 export default class GLuaLintingProvider implements vscode.Disposable {
     private diagnosticCollection: vscode.DiagnosticCollection;
 
-    public activate(subscriptions: vscode.Disposable[]) {
+    public async activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
@@ -27,7 +27,23 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const runOn = config.get<string>('run');
 
         if (runOn !== 'manual') {
-            vscode.workspace.textDocuments.forEach(this.lintDocument, this);
+            for (const grp of vscode.window.tabGroups.all) {
+                for (const tab of grp.tabs) {
+                    if (tab.input instanceof vscode.TabInputText) {
+                        // HACK: bypasses activeLanguages setting!
+                        if (!tab.input.uri.fsPath.endsWith(".lua")) continue;
+
+                        this.lintUri(tab.input.uri);
+                    }
+                }
+            }
+        }
+
+        const allFiles = config.get<boolean>('allFiles');
+        if (allFiles) {
+            // HACK: bypasses activeLanguages setting!
+            const files = await vscode.workspace.findFiles("**/*.lua")
+            files.forEach((fileUri) => this.lintUri(fileUri));
         }
     }
 
@@ -41,7 +57,12 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onCloseTextDocument(doc: vscode.TextDocument) {
-        this.diagnosticCollection.delete(doc.uri);
+        const config = vscode.workspace.getConfiguration('glualint', null);
+        const allFiles = config.get<boolean>('allFiles');
+
+        if (!allFiles) {
+            this.diagnosticCollection.delete(doc.uri);
+        }
     }
 
     private onChangeActiveTexteditor(editor: vscode.TextEditor) {
@@ -88,8 +109,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
+        this.lintUri(doc.uri, doc.getText());
+    }
+
+    // TODO: Rate limit this function? Reuse the linter process?
+    private async lintUri(docUri: vscode.Uri, text: string = null) {
         const args = ['lint', '--stdin'];
-        const lintProcess: LintProcess = new LintProcess(doc, args);
+        const lintProcess: LintProcess = new LintProcess(docUri, args);
 
         if (lintProcess.Process.pid) {
             lintProcess.Process.on('exit', () => {
@@ -111,13 +137,18 @@ export default class GLuaLintingProvider implements vscode.Disposable {
                 }
 
                 if (diagnostics.length === 0) {
-                    this.diagnosticCollection.delete(doc.uri);
+                    this.diagnosticCollection.delete(docUri);
                 } else {
-                    this.diagnosticCollection.set(doc.uri, diagnostics);
+                    this.diagnosticCollection.set(docUri, diagnostics);
                 }
             });
 
-            lintProcess.Process.stdin.end(Buffer.from(doc.getText()));
+            if (text == null) {
+                const fileContents = await vscode.workspace.fs.readFile(docUri);
+                lintProcess.Process.stdin.end(fileContents);
+            } else {
+                lintProcess.Process.stdin.end(Buffer.from(text));
+            }
         }
     }
 }

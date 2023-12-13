@@ -14,6 +14,7 @@ The linter should now be active for any lua and glua files
 `glualint.linter`: Points to the glualint executable, defaults to `glualint`  
 `glualint.activeLanguages`: Languages IDs to activate the linter for (`lua` and `glua` are supported, defaults to both)  
 `glualint.run`: When to run the linter executable (`onSave`, `onType` or `manual`, defaults to `onType`)
+`glualint.allFiles`: Run the linter on all files in the workspace, even if they are closed. Bypasses `glualint.activeLanguages` setting.
 
 Also see [configuring glualint](https://github.com/FPtje/GLuaFixer/blob/master/README.md#configuring-glualint)
 

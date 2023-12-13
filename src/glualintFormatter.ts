@@ -44,7 +44,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
         const indentation = formatOptions.insertSpaces ? ' '.repeat(formatOptions.tabSize) : '\t';
         const args = ['pretty-print', '--stdin', `--indentation=${indentation}`];
-        const lintProcess: LintProcess = new LintProcess(doc, args);
+        const lintProcess: LintProcess = new LintProcess(doc.uri, args);
 
         if (lintProcess.Process.pid) {
             return new Promise<vscode.TextEdit[]>(resolve => {
