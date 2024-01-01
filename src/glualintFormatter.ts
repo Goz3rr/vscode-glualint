@@ -37,7 +37,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
         } else {
             // If range is empty or the selected text is nothing but whitespaces skip
             // formatting.
-            if(range.isEmpty || doc.getText(range).trim() == "") {
+            if(range.isEmpty || doc.getText(range).trim() == '') {
                 return;
             }
         }

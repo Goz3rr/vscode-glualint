@@ -8,7 +8,7 @@ const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: -
 export default class GLuaLintingProvider implements vscode.Disposable {
     private diagnosticCollection: vscode.DiagnosticCollection;
 
-    public async activate(subscriptions: vscode.Disposable[]) {
+    public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
@@ -22,16 +22,23 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         vscode.window.onDidChangeActiveTextEditor(this.onChangeActiveTexteditor, this, subscriptions);
         vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument, this, subscriptions);
         vscode.workspace.onDidSaveTextDocument(this.onSaveTextDocument, this, subscriptions);
+        vscode.workspace.onDidChangeConfiguration(this.onConfigurationChanged, this, subscriptions);
 
-        const config = vscode.workspace.getConfiguration('glualint', null);
+        this.lintOpenAndAllDocuments();
+    }
+
+    private async lintOpenAndAllDocuments() {
+        this.diagnosticCollection.clear();
+
+        const config = vscode.workspace.getConfiguration('glualint');
+
         const runOn = config.get<string>('run');
-
         if (runOn !== 'manual') {
             for (const grp of vscode.window.tabGroups.all) {
                 for (const tab of grp.tabs) {
                     if (tab.input instanceof vscode.TabInputText) {
                         // HACK: bypasses activeLanguages setting!
-                        if (!tab.input.uri.fsPath.endsWith(".lua")) continue;
+                        if (!tab.input.uri.fsPath.endsWith('.lua')) continue;
 
                         this.lintUri(tab.input.uri);
                     }
@@ -42,8 +49,14 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const allFiles = config.get<boolean>('allFiles');
         if (allFiles) {
             // HACK: bypasses activeLanguages setting!
-            const files = await vscode.workspace.findFiles("**/*.lua")
+            const files = await vscode.workspace.findFiles('**/*.lua')
             files.forEach((fileUri) => this.lintUri(fileUri));
+        }
+    }
+
+    private onConfigurationChanged(event: vscode.ConfigurationChangeEvent) {
+        if (event.affectsConfiguration('glualint.allFiles') || event.affectsConfiguration('glualint.run')) {
+            this.lintOpenAndAllDocuments();
         }
     }
 
@@ -57,7 +70,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onCloseTextDocument(doc: vscode.TextDocument) {
-        const config = vscode.workspace.getConfiguration('glualint', null);
+        const config = vscode.workspace.getConfiguration('glualint');
         const allFiles = config.get<boolean>('allFiles');
 
         if (!allFiles) {
@@ -114,41 +127,61 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
     // TODO: Rate limit this function? Reuse the linter process?
     private async lintUri(docUri: vscode.Uri, text: string = null) {
+        // First get the text..
+        let textBuf: any = null;
+        if (text == null) {
+            try {
+                textBuf = await vscode.workspace.fs.readFile(docUri);
+            } catch(e) {
+                if (e instanceof vscode.FileSystemError) {
+                    const fse = e as vscode.FileSystemError;
+
+                    // Do not even print FileNotFound errors
+                    if (fse.code == 'FileNotFound') {
+                        return;
+                    }
+                }
+
+                console.warn('Failed to lint', e);
+                return;
+            }
+        } else {
+            textBuf = Buffer.from(text);
+        }
+
+        // Perform the actual linting
         const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(docUri, args);
-
-        if (lintProcess.Process.pid) {
-            lintProcess.Process.on('exit', () => {
-                const diagnostics: vscode.Diagnostic[] = [];
-
-                let match: RegExpExecArray;
-                // tslint:disable-next-line:no-conditional-assignment
-                while ((match = OUTPUT_REGEXP.exec(lintProcess.StdOut)) !== null) {
-                    // let file = match[1];
-                    const type = match[2];
-                    const line = parseInt(match[3], 10) - 1;
-                    const col = parseInt(match[4], 10) - 1;
-                    const endLine = match[5] !== undefined ? parseInt(match[5], 10) - 1 : line;
-                    const endCol = match[6] !== undefined ? parseInt(match[6], 10) - 1 : col + 1;
-                    const text = match[7];
-
-                    const range = new vscode.Range(line, col, endLine, endCol);
-                    diagnostics.push(new vscode.Diagnostic(range, text, type === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error));
-                }
-
-                if (diagnostics.length === 0) {
-                    this.diagnosticCollection.delete(docUri);
-                } else {
-                    this.diagnosticCollection.set(docUri, diagnostics);
-                }
-            });
-
-            if (text == null) {
-                const fileContents = await vscode.workspace.fs.readFile(docUri);
-                lintProcess.Process.stdin.end(fileContents);
-            } else {
-                lintProcess.Process.stdin.end(Buffer.from(text));
-            }
+        if (!lintProcess.Process.pid) {
+            // TODO: User friendly warning?
+            return;
         }
+
+        lintProcess.Process.on('exit', () => {
+            const diagnostics: vscode.Diagnostic[] = [];
+
+            let match: RegExpExecArray;
+            // tslint:disable-next-line:no-conditional-assignment
+            while ((match = OUTPUT_REGEXP.exec(lintProcess.StdOut)) !== null) {
+                // let file = match[1];
+                const type = match[2];
+                const line = parseInt(match[3], 10) - 1;
+                const col = parseInt(match[4], 10) - 1;
+                const endLine = match[5] !== undefined ? parseInt(match[5], 10) - 1 : line;
+                const endCol = match[6] !== undefined ? parseInt(match[6], 10) - 1 : col + 1;
+                const text = match[7];
+
+                const range = new vscode.Range(line, col, endLine, endCol);
+                diagnostics.push(new vscode.Diagnostic(range, text, type === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error));
+            }
+
+            if (diagnostics.length === 0) {
+                this.diagnosticCollection.delete(docUri);
+            } else {
+                this.diagnosticCollection.set(docUri, diagnostics);
+            }
+        });
+
+        lintProcess.Process.stdin.end(textBuf);
     }
 }
