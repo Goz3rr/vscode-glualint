@@ -42,7 +42,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
             // Group all files by the directories they are in
             const groups: {[id: string]: vscode.Uri[];} = {};
+            const virtualFiles: vscode.Uri[] = [];
             for (const file of allFiles) {
+                if (file.scheme !== "file") {
+                    virtualFiles.push(file);
+                    continue;
+                }
+
                 const fullPath = path.dirname(file.fsPath);
                 if (!groups[fullPath]) groups[fullPath] = [];
                 groups[fullPath].push(file);
@@ -51,6 +57,9 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             // Lint by directory
             for (const [group, files] of Object.entries(groups)) {
                 this.lintFolder(group, files);
+            }
+            for (const file of virtualFiles) {
+                this.lintUri(file);
             }
         }
 
