@@ -6,7 +6,6 @@ export default class LintProcess {
     private Process: ChildProcess;
 
     private StdOut: string = '';
-    //private StdErr: string = '';
 
     private ExitFunc: (doc: vscode.Uri, stdOut: string, exitCode: number) => void;
     private document: vscode.Uri;
@@ -37,10 +36,6 @@ export default class LintProcess {
             this.StdOut += buffer;
         });
 
-        /*this.Process.stderr.on('data', buffer => {
-            this.StdErr += buffer;
-        });*/
-    
         this.Process.on('exit', code => {
             this.ExitFunc(this.document, this.StdOut, code);
         });

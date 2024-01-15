@@ -149,7 +149,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
         const lintProcess: LintProcess = new LintProcess(uris[0], args);
         if (!lintProcess.isValid()) {
-            // TODO: User friendly warning?
+            vscode.window.showErrorMessage('Failed to create linter process.');
             return;
         }
 
@@ -186,7 +186,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const args = ['lint', '--stdin'];
         const lintProcess: LintProcess = new LintProcess(docUri, args);
         if (!lintProcess.isValid()) {
-            // TODO: User friendly warning?
+            vscode.window.showErrorMessage('Failed to create linter process.');
             return;
         }
 
