@@ -5,6 +5,7 @@ import LintProcess from './LintProcess';
 import * as path from 'path';
 
 const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: - line (\d+), column (\d+))?: (.+)/gm;
+const MAX_CONCURRENT_LINTS = 50;
 
 export default class GLuaLintingProvider implements vscode.Disposable {
     private diagnosticCollection: vscode.DiagnosticCollection;
@@ -167,8 +168,32 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         });
     }
 
-    // TODO: Rate limit creating new processes? Reuse the linter process somehow?
-    private async lintUri(docUri: vscode.Uri, text?: string) {
+    private queuedLints: vscode.Uri[] = [];
+    private activeLints: number = 0;
+    private processQueue() {
+        while (this.activeLints < MAX_CONCURRENT_LINTS && this.queuedLints.length > 0) {
+            const promise = this.lintUriQueued(this.queuedLints.pop());
+            this.activeLints++;
+            promise.finally(() => {
+                this.activeLints--;
+                this.processQueue();
+            });
+        }
+    }
+
+    private lintUri(docUri: vscode.Uri, text?: string) {
+        if (text === undefined) {
+            this.queuedLints.push(docUri);
+            this.processQueue();
+        } else {
+            // Skip the queue if we are coming from lintDocument()
+            // This will not happen as often to warrant a queue
+            // and I don't want to deal with the extra args/lint types
+            this.lintUriQueued(docUri, text);
+        }
+    }
+
+    private async lintUriQueued(docUri: vscode.Uri, text?: string) {
         // First get the text..
         let textBuf: any = null;
         if (text === undefined) {
@@ -203,6 +228,9 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             this.onReceiveDiagnostics([url], stdOut, code);
         });
         lintProcess.write(textBuf);
+
+        // Allows us to track when the linter is done via the promise returned by this function
+        await lintProcess.waitForProcessExit();
     }
 
     private async onReceiveDiagnostics(docUris: vscode.Uri[], stdOut: string, exitCode: number) {

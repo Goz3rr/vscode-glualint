@@ -8,6 +8,7 @@ export default class LintProcess {
     private StdOut: string = '';
 
     private ExitFunc: (doc: vscode.Uri, stdOut: string, exitCode: number) => void;
+    private PromiseFunc: () => void;
     private document: vscode.Uri;
 
     constructor(docUri: vscode.Uri, args: string[] = []) {
@@ -38,6 +39,13 @@ export default class LintProcess {
 
         this.Process.on('exit', code => {
             this.ExitFunc(this.document, this.StdOut, code);
+            if (this.PromiseFunc) this.PromiseFunc();
+        });
+    }
+
+    async waitForProcessExit() {
+        return new Promise<void>((res, rej) => {
+            this.PromiseFunc = res;
         });
     }
 
