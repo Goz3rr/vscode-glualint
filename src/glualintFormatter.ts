@@ -46,23 +46,23 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
         const args = ['pretty-print', '--stdin', `--indentation=${indentation}`];
         const lintProcess: LintProcess = new LintProcess(doc.uri, args);
 
-        if (lintProcess.Process.pid) {
-            return new Promise<vscode.TextEdit[]>(resolve => {
-                lintProcess.Process.on('exit', (code) => {
-                    // Check for empty StdOut because < glualint 1.17.2 does not set exit code
-                    if (code > 0 || lintProcess.StdOut === '') {
-                        vscode.window.showErrorMessage('Failed to pretty print code, most likely due to syntax errors.');
-                        resolve([]);
-                        return;
-                    }
-
-                    resolve([vscode.TextEdit.replace(range, lintProcess.StdOut)]);
-                });
-
-                lintProcess.Process.stdin.end(Buffer.from(doc.getText(range)));
-            });
+        if (!lintProcess.isValid()) {
+            return Promise.resolve([]);
         }
 
-        return Promise.resolve([]);
+        return new Promise<vscode.TextEdit[]>(resolve => {
+            lintProcess.onExit((url, stdOut, code) => {
+                // Check for empty StdOut because < glualint 1.17.2 does not set exit code
+                if (code > 0 || stdOut === '') {
+                    vscode.window.showErrorMessage('Failed to pretty print code, most likely due to syntax errors.');
+                    resolve([]);
+                    return;
+                }
+
+                resolve([vscode.TextEdit.replace(range, stdOut)]);
+            });
+
+            lintProcess.write(Buffer.from(doc.getText(range)));
+        });
     }
 }
