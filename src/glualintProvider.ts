@@ -3,8 +3,8 @@
 import * as vscode from 'vscode';
 import LintProcess from './LintProcess';
 import * as path from 'path';
+import * as utils from './utils';
 
-const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: - line (\d+), column (\d+))?: (.+)/gm;
 const MAX_CONCURRENT_LINTS = 50;
 
 export default class GLuaLintingProvider implements vscode.Disposable {
@@ -142,8 +142,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private lintDocument(doc: vscode.TextDocument) {
-        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
-        const activeLanguages = config.get<string[]>('activeLanguages') ?? ['glua', 'lua'];
+        const activeLanguages = utils.getActiveLanguages(doc.uri);
 
         if (!activeLanguages.includes(doc.languageId)) {
             return;
@@ -153,7 +152,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private lintFolder(folder: string, uris: vscode.Uri[]) {
-        const args = ['lint'];
+        const args = ['lint', ...utils.getCustomConfigArgs(uris[0])];
         for (const file of uris) {
             args.push(file.fsPath.substring(folder.length + 1));
         }
@@ -215,7 +214,8 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
 
         // Perform the actual linting
-        const args = ['lint', '--stdin'];
+        const args = ['lint', '--stdin', ...utils.getCustomConfigArgs(docUri)];
+
         const lintProcess: LintProcess = new LintProcess(docUri, args);
         if (!lintProcess.isValid()) {
             vscode.window.showErrorMessage('Failed to create linter process.');
@@ -232,24 +232,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onReceiveDiagnostics(docUris: vscode.Uri[], stdOut: string, _exitCode: number) {
-        const diagnostics: { [id: string]: vscode.Diagnostic[] } = {};
-
-        let match: RegExpExecArray | null;
-        while ((match = OUTPUT_REGEXP.exec(stdOut)) !== null) {
-            const file = match[1];
-            const type = match[2];
-            const line = parseInt(match[3], 10) - 1;
-            const col = parseInt(match[4], 10) - 1;
-            const endLine = match[5] !== undefined ? parseInt(match[5], 10) - 1 : line;
-            const endCol = match[6] !== undefined ? parseInt(match[6], 10) - 1 : col + 1;
-            const text = match[7];
-
-            const range = new vscode.Range(line, col, endLine, endCol);
-            const diagnostic = new vscode.Diagnostic(range, text, type === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error);
-
-            if (!diagnostics[file]) { diagnostics[file] = []; }
-            diagnostics[file].push(diagnostic);
-        }
+        const diagnostics = LintProcess.parseDiagnostics(stdOut);
 
         // Special case for lintUri
         if (diagnostics['stdin']) {

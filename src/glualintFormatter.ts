@@ -6,8 +6,7 @@ import LintProcess from './LintProcess';
 
 export default class GLuaLintFormatter implements vscode.DocumentFormattingEditProvider, vscode.DocumentRangeFormattingEditProvider {
     public activate(subscriptions: vscode.Disposable[]) {
-        const config = vscode.workspace.getConfiguration('glualint');
-        const activeLanguages = config.get<string[]>('activeLanguages') ?? ['glua', 'lua'];
+        const activeLanguages = utils.getActiveLanguages();
 
         activeLanguages.forEach(lang => {
             subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider({
@@ -43,7 +42,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
         const targetRange = range;
         const indentation = formatOptions.insertSpaces ? ' '.repeat(formatOptions.tabSize) : '\t';
-        const args = ['pretty-print', '--stdin', `--indentation=${indentation}`];
+        const args = ['pretty-print', '--stdin', `--indentation=${indentation}`, ...utils.getCustomConfigArgs(doc.uri)];
         const lintProcess: LintProcess = new LintProcess(doc.uri, args);
 
         if (!lintProcess.isValid()) {

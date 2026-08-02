@@ -76,6 +76,12 @@
                     "scope": "window",
                     "default": false,
                     "markdownDescription": "Run the linter on all files in the workspace, even if they are closed. Bypasses `glualint.activeLanguages` setting."
+                },
+                "glualint.config": {
+                    "type": "string",
+                    "scope": "resource",
+                    "default": "",
+                    "markdownDescription": "Points to a custom `glualint.json` or `.glualint.json` configuration file"
                 }
             }
         }

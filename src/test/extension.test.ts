@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import LintProcess from '../LintProcess';
 
 suite('GLuaLint Extension Test Suite', () => {
     vscode.window.showInformationMessage('Start glualint extension tests.');
@@ -18,6 +19,18 @@ suite('GLuaLint Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands(true);
         assert.ok(commands.includes('glualint.lint'), 'glualint.lint command should be registered');
     });
+
+    test('LintProcess.parseDiagnostics should correctly parse glualint output', () => {
+        const sampleOutput = 'stdin: [Error] line 5, column 10 - line 5, column 15: Undefined variable foo';
+        const parsed = LintProcess.parseDiagnostics(sampleOutput);
+        assert.ok(parsed['stdin'], 'Should parse stdin output key');
+        assert.strictEqual(parsed['stdin'].length, 1);
+        assert.strictEqual(parsed['stdin'][0].message, 'Undefined variable foo');
+        assert.strictEqual(parsed['stdin'][0].severity, vscode.DiagnosticSeverity.Error);
+        assert.strictEqual(parsed['stdin'][0].range.start.line, 4);
+        assert.strictEqual(parsed['stdin'][0].range.start.character, 9);
+    });
 });
+
 
 
