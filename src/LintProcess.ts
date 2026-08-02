@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, SpawnOptions } from 'child_process';
 import * as path from 'path';
 
 export default class LintProcess {
@@ -7,44 +7,48 @@ export default class LintProcess {
 
     private StdOut: string = '';
 
-    private ExitFunc: (doc: vscode.Uri, stdOut: string, exitCode: number) => void;
-    private PromiseFunc: () => void;
+    private ExitFunc?: (doc: vscode.Uri, stdOut: string, exitCode: number) => void;
+    private PromiseFunc?: () => void;
     private document: vscode.Uri;
 
     constructor(docUri: vscode.Uri, args: string[] = []) {
         this.document = docUri;
 
         const config = vscode.workspace.getConfiguration('glualint');
-        const executable = config.get<string>('linter');
-        const options = {};
+        const executable = config.get<string>('linter') || 'glualint';
+        const options: SpawnOptions = {};
 
         // uri.fsPath is only valid for the file scheme
         if (docUri.scheme === 'file') {
-            options['cwd'] = path.dirname(docUri.fsPath);
+            options.cwd = path.dirname(docUri.fsPath);
         }
 
         this.Process = spawn(executable, args, options);
 
         this.Process.on('error', (error: any) => {
-            if (error.code === 'ENOENT') {
+            if (error && error.code === 'ENOENT') {
                 vscode.window.showErrorMessage(`Failed to find '${executable}'. Are you sure it's in your path?`);
             } else {
-                vscode.window.showErrorMessage(`${executable} error: ${error}`);
+                vscode.window.showErrorMessage(`${executable} error: ${error?.message || error}`);
             }
         });
 
-        this.Process.stdout.on('data', buffer => {
-            this.StdOut += buffer;
+        this.Process.stdout?.on('data', buffer => {
+            this.StdOut += buffer.toString();
         });
 
         this.Process.on('exit', code => {
-            this.ExitFunc(this.document, this.StdOut, code);
-            if (this.PromiseFunc) this.PromiseFunc();
+            if (this.ExitFunc) {
+                this.ExitFunc(this.document, this.StdOut, code ?? 0);
+            }
+            if (this.PromiseFunc) {
+                this.PromiseFunc();
+            }
         });
     }
 
     async waitForProcessExit() {
-        return new Promise<void>((res, rej) => {
+        return new Promise<void>((res) => {
             this.PromiseFunc = res;
         });
     }
@@ -54,10 +58,17 @@ export default class LintProcess {
     }
 
     write(data: any) {
-        this.Process.stdin.end(data);
+        if (this.Process.stdin) {
+            this.Process.stdin.on('error', () => {
+                // Suppress pipe errors if glualint closes early
+            });
+            this.Process.stdin.end(data);
+        }
     }
 
     isValid(): boolean {
-        return this.Process.pid > 0;
+        return (this.Process.pid ?? 0) > 0;
     }
 }
+
+

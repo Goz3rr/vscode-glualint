@@ -8,7 +8,7 @@ const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: -
 const MAX_CONCURRENT_LINTS = 50;
 
 export default class GLuaLintingProvider implements vscode.Disposable {
-    private diagnosticCollection: vscode.DiagnosticCollection;
+    private diagnosticCollection!: vscode.DiagnosticCollection;
 
     public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
@@ -38,40 +38,40 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const allFiles = config.get<boolean>('allFiles');
         if (allFiles) {
             // HACK: bypasses activeLanguages setting!
-            const allFiles = await vscode.workspace.findFiles('**/*.lua');
-            console.log('vscode-glualint: Linting ' + allFiles.length + ' file(s)...');
+            const files = await vscode.workspace.findFiles('**/*.lua');
+            console.log('vscode-glualint: Linting ' + files.length + ' file(s)...');
 
             // Group all files by the directories they are in
-            const groups: {[id: string]: vscode.Uri[];} = {};
+            const groups: { [id: string]: vscode.Uri[] } = {};
             const virtualFiles: vscode.Uri[] = [];
-            for (const file of allFiles) {
-                if (file.scheme !== "file") {
+            for (const file of files) {
+                if (file.scheme !== 'file') {
                     virtualFiles.push(file);
                     continue;
                 }
 
                 const fullPath = path.dirname(file.fsPath);
-                if (!groups[fullPath]) groups[fullPath] = [];
+                if (!groups[fullPath]) { groups[fullPath] = []; }
                 groups[fullPath].push(file);
             }
 
             // Lint by directory
-            for (const [group, files] of Object.entries(groups)) {
-                this.lintFolder(group, files);
+            for (const [group, groupFiles] of Object.entries(groups)) {
+                this.lintFolder(group, groupFiles);
             }
             for (const file of virtualFiles) {
                 this.lintUri(file);
             }
         }
 
-        // Then (ideally) any open ediots, which may be edited
+        // Then (ideally) any open editors, which may be edited
         const runOn = config.get<string>('run');
         if (runOn !== 'manual') {
             for (const grp of vscode.window.tabGroups.all) {
                 for (const tab of grp.tabs) {
                     if (tab.input instanceof vscode.TabInputText) {
                         // HACK: bypasses activeLanguages setting!
-                        if (!tab.input.uri.fsPath.endsWith('.lua')) continue;
+                        if (!tab.input.uri.fsPath.endsWith('.lua')) { continue; }
 
                         this.lintUri(tab.input.uri);
                     }
@@ -104,7 +104,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
     }
 
-    private onChangeActiveTexteditor(editor: vscode.TextEditor) {
+    private onChangeActiveTexteditor(editor: vscode.TextEditor | undefined) {
         // onDidChangeActiveTextEditor can be called with no editor, we can't do anything then
         if (editor === undefined) {
             return;
@@ -142,9 +142,10 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private lintDocument(doc: vscode.TextDocument) {
-        const config = vscode.workspace.getConfiguration('glualint');
+        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
+        const activeLanguages = config.get<string[]>('activeLanguages') ?? ['glua', 'lua'];
 
-        if (config.get<string[]>('activeLanguages').indexOf(doc.languageId) === -1) {
+        if (!activeLanguages.includes(doc.languageId)) {
             return;
         }
 
@@ -152,7 +153,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private lintFolder(folder: string, uris: vscode.Uri[]) {
-        let args = ['lint'];
+        const args = ['lint'];
         for (const file of uris) {
             args.push(file.fsPath.substring(folder.length + 1));
         }
@@ -163,7 +164,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        lintProcess.onExit((url, stdOut, code) => {
+        lintProcess.onExit((_url, stdOut, code) => {
             this.onReceiveDiagnostics(uris, stdOut, code);
         });
     }
@@ -172,12 +173,15 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     private activeLints: number = 0;
     private processQueue() {
         while (this.activeLints < MAX_CONCURRENT_LINTS && this.queuedLints.length > 0) {
-            const promise = this.lintUriQueued(this.queuedLints.pop());
-            this.activeLints++;
-            promise.finally(() => {
-                this.activeLints--;
-                this.processQueue();
-            });
+            const docUri = this.queuedLints.pop();
+            if (docUri) {
+                const promise = this.lintUriQueued(docUri);
+                this.activeLints++;
+                promise.finally(() => {
+                    this.activeLints--;
+                    this.processQueue();
+                });
+            }
         }
     }
 
@@ -187,24 +191,18 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             this.processQueue();
         } else {
             // Skip the queue if we are coming from lintDocument()
-            // This will not happen as often to warrant a queue
-            // and I don't want to deal with the extra args/lint types
             this.lintUriQueued(docUri, text);
         }
     }
 
     private async lintUriQueued(docUri: vscode.Uri, text?: string) {
-        // First get the text..
-        let textBuf: any = null;
+        let textBuf: Uint8Array | null = null;
         if (text === undefined) {
             try {
                 textBuf = await vscode.workspace.fs.readFile(docUri);
-            } catch(e) {
+            } catch (e) {
                 if (e instanceof vscode.FileSystemError) {
-                    const fse = e as vscode.FileSystemError;
-
-                    // Do not even print FileNotFound errors
-                    if (fse.code == 'FileNotFound') {
+                    if (e.code === 'FileNotFound') {
                         return;
                     }
                 }
@@ -233,11 +231,10 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         await lintProcess.waitForProcessExit();
     }
 
-    private async onReceiveDiagnostics(docUris: vscode.Uri[], stdOut: string, exitCode: number) {
-        const diagnostics: {[id: string]: vscode.Diagnostic[];} = {};
+    private onReceiveDiagnostics(docUris: vscode.Uri[], stdOut: string, _exitCode: number) {
+        const diagnostics: { [id: string]: vscode.Diagnostic[] } = {};
 
-        let match: RegExpExecArray;
-        // tslint:disable-next-line:no-conditional-assignment
+        let match: RegExpExecArray | null;
         while ((match = OUTPUT_REGEXP.exec(stdOut)) !== null) {
             const file = match[1];
             const type = match[2];
@@ -250,7 +247,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             const range = new vscode.Range(line, col, endLine, endCol);
             const diagnostic = new vscode.Diagnostic(range, text, type === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error);
 
-            if (!diagnostics[file]) diagnostics[file] = [];
+            if (!diagnostics[file]) { diagnostics[file] = []; }
             diagnostics[file].push(diagnostic);
         }
 
@@ -277,3 +274,5 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
     }
 }
+
+
