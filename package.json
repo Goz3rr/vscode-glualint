@@ -17,7 +17,7 @@
     "version": "0.10.0",
     "publisher": "goz3rr",
     "engines": {
-        "vscode": "^1.44.0"
+        "vscode": "^1.125.0"
     },
     "categories": [
         "Linters",
@@ -35,7 +35,7 @@
             "description": "In virtual workspaces, glualint is unable to set a working directory and will not respect any config files from the virtual workspace. Put the config file in your home directory instead if required."
         }
     },
-    "main": "./out/extension",
+    "main": "./dist/extension.js",
     "contributes": {
         "commands": [
             {
@@ -82,13 +82,33 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p ./",
-        "watch": "tsc -watch -p ./"
+        "vscode:prepublish": "npm run package",
+        "compile": "npm run check-types && npm run lint && node esbuild.js",
+        "watch": "npm-run-all -p watch:*",
+        "watch:esbuild": "node esbuild.js --watch",
+        "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+        "package": "npm run check-types && npm run lint && node esbuild.js --production",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "check-types": "tsc --noEmit",
+        "lint": "eslint src",
+        "test": "vscode-test"
     },
     "devDependencies": {
-        "@types/node": "^13.11.1",
-        "@types/vscode": "^1.82.0",
-        "typescript": "^5.2.2"
+        "@types/vscode": "^1.125.0",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "24.x",
+        "typescript-eslint": "^8.61.1",
+        "eslint": "^10.5.0",
+        "esbuild": "^0.28.1",
+        "npm-run-all": "^4.1.5",
+        "typescript": "^6.0.3",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.0.0"
+    },
+    "overrides": {
+        "diff": "^8.0.4",
+        "serialize-javascript": "^7.0.6"
     }
 }
