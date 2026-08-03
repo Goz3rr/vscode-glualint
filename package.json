@@ -92,6 +92,12 @@
                     ],
                     "default": "file",
                     "markdownDescription": "Controls the working directory for the glualint process. `file` (default) uses the directory of the open file (supports nested config files). `workspace` uses the workspace root folder."
+                },
+                "glualint.checkForUpdates": {
+                    "type": "boolean",
+                    "scope": "window",
+                    "default": true,
+                    "markdownDescription": "Automatically check for new versions of glualint on startup."
                 }
             }
         }

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as constants from './constants';
 
 export function fullDocumentRange(doc: vscode.TextDocument): vscode.Range {
     const lastLine = doc.lineCount - 1;
@@ -6,8 +7,8 @@ export function fullDocumentRange(doc: vscode.TextDocument): vscode.Range {
 }
 
 export function getCustomConfigArgs(uri?: vscode.Uri): string[] {
-    const config = vscode.workspace.getConfiguration('glualint', uri);
-    const customConfig = config.get<string>('config');
+    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri);
+    const customConfig = config.get<string>(constants.CONFIG_CONFIG);
     if (customConfig) {
         return ['--config', customConfig];
     }
@@ -15,12 +16,12 @@ export function getCustomConfigArgs(uri?: vscode.Uri): string[] {
 }
 
 export function getActiveLanguages(uri?: vscode.Uri): string[] {
-    const config = vscode.workspace.getConfiguration('glualint', uri);
-    return config.get<string[]>('activeLanguages') ?? ['glua', 'lua'];
+    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri);
+    return config.get<string[]>(constants.CONFIG_ACTIVE_LANGUAGES) ?? ['glua', 'lua'];
 }
 
 export function getRunMode(uri?: vscode.Uri): string {
-    const config = vscode.workspace.getConfiguration('glualint', uri);
-    return config.get<string>('run') ?? 'onType';
+    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri);
+    return config.get<string>(constants.CONFIG_RUN) ?? 'onType';
 }
 

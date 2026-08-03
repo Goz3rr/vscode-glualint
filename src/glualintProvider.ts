@@ -1,9 +1,8 @@
-'use strict';
-
 import * as vscode from 'vscode';
 import LintProcess from './LintProcess';
 import * as path from 'path';
 import * as utils from './utils';
+import * as constants from './constants';
 
 const MAX_CONCURRENT_LINTS = 50;
 
@@ -197,7 +196,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         this.statusItem.command = {
             title: 'Configure Linter Path',
             command: 'workbench.action.openSettings',
-            arguments: ['glualint.linter']
+            arguments: [`${constants.CONFIG_SECTION}.${constants.CONFIG_LINTER}`]
         };
     }
 
@@ -205,12 +204,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         lintProcess.onError(err => {
             if (err && err.code === 'ENOENT') {
                 this.setStatusError(lintProcess.executable);
+                this.diagnosticCollection.clear();
             }
         });
 
         if (!lintProcess.isValid()) {
             this.setStatusError(lintProcess.executable);
-            vscode.window.showErrorMessage('Failed to create linter process.');
+            this.diagnosticCollection.clear();
             return false;
         }
 

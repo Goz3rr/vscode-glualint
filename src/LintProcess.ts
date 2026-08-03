@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { spawn, ChildProcess, SpawnOptions } from 'child_process';
 import * as path from 'path';
+import * as constants from './constants';
 
 const OUTPUT_REGEXP = /^(.+?): \[(Error|Warning)\] line (\d+), column (\d+)(?: - line (\d+), column (\d+))?: (.+)/gm;
 
@@ -18,9 +19,9 @@ export default class LintProcess {
     constructor(docUri: vscode.Uri, args: string[] = []) {
         this.document = docUri;
 
-        const config = vscode.workspace.getConfiguration('glualint', docUri);
-        this.executable = config.get<string>('linter') || 'glualint';
-        const workingDirectoryMode = config.get<string>('workingDirectory') ?? 'file';
+        const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, docUri);
+        this.executable = config.get<string>(constants.CONFIG_LINTER) || 'glualint';
+        const workingDirectoryMode = config.get<string>(constants.CONFIG_WORKING_DIRECTORY) ?? 'file';
         const options: SpawnOptions = {};
 
         if (workingDirectoryMode === 'workspace') {
@@ -41,8 +42,7 @@ export default class LintProcess {
         this.Process.on('error', (error: any) => {
             if (this.ErrorFunc) {
                 this.ErrorFunc(error);
-            }
-            if (error && error.code === 'ENOENT') {
+            } else if (error && error.code === 'ENOENT') {
                 vscode.window.showErrorMessage(`Failed to find '${this.executable}'. Are you sure it's in your path?`);
             } else {
                 vscode.window.showErrorMessage(`${this.executable} error: ${error?.message || error}`);
@@ -91,7 +91,7 @@ export default class LintProcess {
             const lowerText = text.toLowerCase();
             const tags: vscode.DiagnosticTag[] = [];
 
-            if (lowerText.includes('unused') || lowerText.includes('never used') || lowerText.includes('unreachable') || lowerText.includes('redundant')) {
+            if (lowerText.includes('unused') || lowerText.includes('never used') || lowerText.includes('unreachable') || lowerText.includes('redundant') || lowerText.includes('unnecessary') || lowerText.includes('double negation')) {
                 tags.push(vscode.DiagnosticTag.Unnecessary);
             }
 
@@ -137,5 +137,27 @@ export default class LintProcess {
 
     isValid(): boolean {
         return (this.Process.pid ?? 0) > 0;
+    }
+
+    public static async getVersion(executable?: string): Promise<string | undefined> {
+        const targetExecutable = executable || vscode.workspace.getConfiguration(constants.CONFIG_SECTION).get<string>(constants.CONFIG_LINTER) || 'glualint';
+        return new Promise<string | undefined>((resolve) => {
+            try {
+                const proc = spawn(targetExecutable, ['--version']);
+                let stdout = '';
+                proc.stdout?.on('data', data => { stdout += data.toString(); });
+                proc.on('error', () => resolve(undefined));
+                proc.on('exit', code => {
+                    if (code === 0) {
+                        const match = stdout.match(/(\d+\.\d+\.\d+)/);
+                        resolve(match ? match[1] : undefined);
+                    } else {
+                        resolve(undefined);
+                    }
+                });
+            } catch {
+                resolve(undefined);
+            }
+        });
     }
 }

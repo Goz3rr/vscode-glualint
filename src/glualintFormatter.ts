@@ -1,7 +1,6 @@
-'use strict';
-
 import * as vscode from 'vscode';
 import * as utils from './utils';
+import * as constants from './constants';
 import LintProcess from './LintProcess';
 
 export default class GLuaLintFormatter implements vscode.DocumentFormattingEditProvider, vscode.DocumentRangeFormattingEditProvider {
@@ -9,7 +8,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
     public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(vscode.workspace.onDidChangeConfiguration(event => {
-            if (event.affectsConfiguration('glualint.activeLanguages')) {
+            if (event.affectsConfiguration(`${constants.CONFIG_SECTION}.${constants.CONFIG_ACTIVE_LANGUAGES}`)) {
                 this.registerProviders(subscriptions);
             }
         }));
@@ -48,17 +47,11 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
     }
 
     private formatDocument(doc: vscode.TextDocument, formatOptions: vscode.FormattingOptions, token: vscode.CancellationToken, range?: vscode.Range): Promise<vscode.TextEdit[]> {
-        if (range === undefined) {
-            // Format entire document.
-            range = utils.fullDocumentRange(doc);
-        } else {
-            // If range is empty or the selected text is nothing but whitespaces skip formatting.
-            if (range.isEmpty || doc.getText(range).trim() === '') {
-                return Promise.resolve([]);
-            }
+        const targetRange = range ?? utils.fullDocumentRange(doc);
+        if (targetRange.isEmpty || doc.getText(targetRange).trim() === '') {
+            return Promise.resolve([]);
         }
 
-        const targetRange = range;
         const indentation = formatOptions.insertSpaces ? ' '.repeat(formatOptions.tabSize) : '\t';
         const args = ['pretty-print', '--stdin', `--indentation=${indentation}`, ...utils.getCustomConfigArgs(doc.uri)];
         const lintProcess: LintProcess = new LintProcess(doc.uri, args);
