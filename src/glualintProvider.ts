@@ -33,7 +33,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
 
         vscode.workspace.onDidOpenTextDocument(this.onOpenTextDocument, this, subscriptions);
         vscode.workspace.onDidCloseTextDocument(this.onCloseTextDocument, this, subscriptions);
-        vscode.window.onDidChangeActiveTextEditor(this.onChangeActiveTexteditor, this, subscriptions);
+        vscode.window.onDidChangeActiveTextEditor(this.onChangeActiveTextEditor, this, subscriptions);
         vscode.workspace.onDidChangeTextDocument(this.onChangeTextDocument, this, subscriptions);
         vscode.workspace.onDidSaveTextDocument(this.onSaveTextDocument, this, subscriptions);
         vscode.workspace.onDidChangeConfiguration(this.onConfigurationChanged, this, subscriptions);
@@ -77,7 +77,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
 
         // Then (ideally) any open editors, which may be edited
-        const runOn = config.get<string>('run');
+        const runOn = utils.getRunMode(null);
         if (runOn !== 'manual') {
             for (const grp of vscode.window.tabGroups.all) {
                 for (const tab of grp.tabs) {
@@ -125,7 +125,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
     }
 
-    private onChangeActiveTexteditor(editor: vscode.TextEditor | undefined) {
+    private onChangeActiveTextEditor(editor: vscode.TextEditor | undefined) {
         // onDidChangeActiveTextEditor can be called with no editor, we can't do anything then
         if (editor === undefined) {
             return;
@@ -170,7 +170,7 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private lintDocument(doc: vscode.TextDocument) {
-        const activeLanguages = utils.getActiveLanguages(doc.uri);
+        const activeLanguages = utils.getActiveLanguages();
 
         if (!activeLanguages.includes(doc.languageId)) {
             return;

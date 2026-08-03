@@ -15,13 +15,13 @@ export function getCustomConfigArgs(uri?: vscode.Uri): string[] {
     return [];
 }
 
-export function getActiveLanguages(uri?: vscode.Uri): string[] {
-    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri);
+export function getActiveLanguages(): string[] {
+    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION);
     return config.get<string[]>(constants.CONFIG_ACTIVE_LANGUAGES) ?? ['glua', 'lua'];
 }
 
-export function getRunMode(uri?: vscode.Uri): string {
-    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri);
+export function getRunMode(uri?: vscode.Uri | null): string {
+    const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, uri ?? null);
     return config.get<string>(constants.CONFIG_RUN) ?? 'onType';
 }
 
