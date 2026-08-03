@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-03
+### Added
+- `glualint.checkForUpdates`: automatic update checker for new glualint versions
+- `glualint.workingDirectory`: control whether the linter runs in the `file` or `workspace` directory (fixes #23)
+- `glualint.config`: specify a custom config file (fixes #22)
+- `glualint.allFiles`: lint all files in the workspace, including closed ones (by @robotboy655)
+- Language status item and diagnostic tag support
+- 500ms debounce after typing before linting starts
+- Concurrency limit when linting all workspace files (by @robotboy655)
+- Reactive settings (no restart needed when changing most settings) (by @robotboy655)
+
+### Fixed
+- Spawn linter with a shell to ensure environment variables (e.g. PATH) are loaded (fixes #21)
+- Fixed initially opened documents not getting linted (by @robotboy655)
+- Fixed empty selection causing a format attempt (by @ZehMatt)
+- Improved virtual workspace handling (by @robotboy655)
+
 ## [0.10.0] - 2023-06-01
 This release requires at least glualint 1.17.0 to be installed
 ### Fixed
@@ -68,7 +85,8 @@ This release requires at least glualint 1.17.0 to be installed
 ## [0.0.1] - 2017-11-06
 - Initial Version
 
-[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.7.0...v0.8.0
