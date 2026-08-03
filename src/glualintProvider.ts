@@ -95,7 +95,16 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
     }
 
+    private documentTimers = new Map<string, NodeJS.Timeout>();
+
     private onCloseTextDocument(doc: vscode.TextDocument) {
+        const uriKey = doc.uri.toString();
+        const existingTimer = this.documentTimers.get(uriKey);
+        if (existingTimer) {
+            clearTimeout(existingTimer);
+            this.documentTimers.delete(uriKey);
+        }
+
         const config = vscode.workspace.getConfiguration('glualint');
         const allFiles = config.get<boolean>('allFiles');
 
@@ -123,7 +132,18 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const runOn = config.get<string>('run');
 
         if (runOn === 'onType') {
-            this.lintDocument(event.document);
+            const uriKey = event.document.uri.toString();
+            const existingTimer = this.documentTimers.get(uriKey);
+            if (existingTimer) {
+                clearTimeout(existingTimer);
+            }
+
+            const newTimer = setTimeout(() => {
+                this.documentTimers.delete(uriKey);
+                this.lintDocument(event.document);
+            }, 500);
+
+            this.documentTimers.set(uriKey, newTimer);
         }
     }
 
@@ -137,6 +157,11 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     public dispose(): void {
+        for (const timer of this.documentTimers.values()) {
+            clearTimeout(timer);
+        }
+        this.documentTimers.clear();
+
         this.diagnosticCollection.clear();
         this.diagnosticCollection.dispose();
     }
