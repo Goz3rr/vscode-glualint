@@ -40,6 +40,10 @@
             {
                 "command": "glualint.lint",
                 "title": "Glualint: Lint Document"
+            },
+            {
+                "command": "glualint.checkForUpdates",
+                "title": "Glualint: Check for Updates"
             }
         ],
         "configuration": {
@@ -117,19 +121,25 @@
         "test": "vscode-test"
     },
     "devDependencies": {
-        "@types/vscode": "^1.125.0",
         "@types/mocha": "^10.0.10",
         "@types/node": "24.x",
-        "typescript-eslint": "^8.61.1",
-        "eslint": "^10.5.0",
+        "@types/vscode": "^1.125.0",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.0.0",
         "esbuild": "^0.28.1",
+        "eslint": "^10.5.0",
         "npm-run-all": "^4.1.5",
         "typescript": "^6.0.3",
-        "@vscode/test-cli": "^0.0.15",
-        "@vscode/test-electron": "^3.0.0"
+        "typescript-eslint": "^8.61.1"
     },
     "overrides": {
         "diff": "^8.0.4",
         "serialize-javascript": "^7.0.6"
+    },
+    "dependencies": {
+        "@types/adm-zip": "^0.5.8",
+        "@types/tar": "^6.1.13",
+        "adm-zip": "^0.6.0",
+        "tar": "^7.5.22"
     }
 }

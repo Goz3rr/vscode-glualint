@@ -40,6 +40,7 @@ export default class LintProcess {
         this.Process = spawn(this.executable, args, options);
 
         this.Process.on('error', (error: any) => {
+            console.error(`glualint: Process execution error for '${this.executable}':`, error);
             if (this.ErrorFunc) {
                 this.ErrorFunc(error);
             } else if (error && error.code === 'ENOENT') {

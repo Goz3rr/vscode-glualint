@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-08-03
+### Added
+- `Glualint: Check for Updates` command (`glualint.checkForUpdates`) to trigger update checks manually at any time
+
+### Fixed
+- Update checker not working if the update was deferred once already
+
 ## [0.11.1] - 2026-08-03
 ### Fixed
 - Fixed extension host warnings caused by configuration scoping mismatches
@@ -90,7 +97,8 @@ This release requires at least glualint 1.17.0 to be installed
 ## [0.0.1] - 2017-11-06
 - Initial Version
 
-[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/Goz3rr/vscode-glualint/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/Goz3rr/vscode-glualint/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Goz3rr/vscode-glualint/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/Goz3rr/vscode-glualint/compare/v0.9.0...v0.10.0

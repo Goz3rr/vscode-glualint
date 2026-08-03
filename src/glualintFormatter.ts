@@ -73,6 +73,7 @@ export default class GLuaLintFormatter implements vscode.DocumentFormattingEditP
 
                 // Check for empty StdOut because < glualint 1.17.2 does not set exit code
                 if (code > 0 || stdOut === '') {
+                    console.warn(`glualint: Pretty print failed for ${doc.uri.fsPath} (exit code: ${code})`);
                     vscode.window.showErrorMessage('Failed to pretty print code, most likely due to syntax errors.');
                     resolve([]);
                     return;
