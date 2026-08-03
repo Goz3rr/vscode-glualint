@@ -18,3 +18,9 @@ export function getActiveLanguages(uri?: vscode.Uri): string[] {
     const config = vscode.workspace.getConfiguration('glualint', uri);
     return config.get<string[]>('activeLanguages') ?? ['glua', 'lua'];
 }
+
+export function getRunMode(uri?: vscode.Uri): string {
+    const config = vscode.workspace.getConfiguration('glualint', uri);
+    return config.get<string>('run') ?? 'onType';
+}
+

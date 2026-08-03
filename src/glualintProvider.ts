@@ -9,11 +9,24 @@ const MAX_CONCURRENT_LINTS = 50;
 
 export default class GLuaLintingProvider implements vscode.Disposable {
     private diagnosticCollection!: vscode.DiagnosticCollection;
+    private statusItem!: vscode.LanguageStatusItem;
 
     public activate(subscriptions: vscode.Disposable[]) {
         subscriptions.push(this);
 
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('glua');
+
+        const selector = utils.getActiveLanguages().map(lang => ({ language: lang }));
+        this.statusItem = vscode.languages.createLanguageStatusItem('glualint', selector);
+        this.statusItem.name = 'glualint';
+        this.statusItem.text = '$(check) glualint';
+        this.statusItem.detail = 'glualint active';
+        this.statusItem.severity = vscode.LanguageStatusSeverity.Information;
+        this.statusItem.command = {
+            title: 'Lint Document',
+            command: 'glualint.lint'
+        };
+        subscriptions.push(this.statusItem);
 
         subscriptions.push(vscode.commands.registerTextEditorCommand('glualint.lint', textEditor => {
             this.lintDocument(textEditor.document);
@@ -81,16 +94,16 @@ export default class GLuaLintingProvider implements vscode.Disposable {
     }
 
     private onConfigurationChanged(event: vscode.ConfigurationChangeEvent) {
+        if (event.affectsConfiguration('glualint.activeLanguages')) {
+            this.statusItem.selector = utils.getActiveLanguages().map(lang => ({ language: lang }));
+        }
         if (event.affectsConfiguration('glualint.allFiles') || event.affectsConfiguration('glualint.run')) {
             this.lintOpenAndAllDocuments();
         }
     }
 
     private onOpenTextDocument(doc: vscode.TextDocument) {
-        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
-        const runOn = config.get<string>('run');
-
-        if (runOn !== 'manual') {
+        if (utils.getRunMode(doc.uri) !== 'manual') {
             this.lintDocument(doc);
         }
     }
@@ -119,19 +132,13 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             return;
         }
 
-        const config = vscode.workspace.getConfiguration('glualint', editor.document.uri);
-        const runOn = config.get<string>('run');
-
-        if (runOn !== 'manual') {
+        if (utils.getRunMode(editor.document.uri) !== 'manual') {
             this.lintDocument(editor.document);
         }
     }
 
     private onChangeTextDocument(event: vscode.TextDocumentChangeEvent) {
-        const config = vscode.workspace.getConfiguration('glualint', event.document.uri);
-        const runOn = config.get<string>('run');
-
-        if (runOn === 'onType') {
+        if (utils.getRunMode(event.document.uri) === 'onType') {
             const uriKey = event.document.uri.toString();
             const existingTimer = this.documentTimers.get(uriKey);
             if (existingTimer) {
@@ -141,17 +148,14 @@ export default class GLuaLintingProvider implements vscode.Disposable {
             const newTimer = setTimeout(() => {
                 this.documentTimers.delete(uriKey);
                 this.lintDocument(event.document);
-            }, 500);
+            }, 250);
 
             this.documentTimers.set(uriKey, newTimer);
         }
     }
 
     private onSaveTextDocument(doc: vscode.TextDocument) {
-        const config = vscode.workspace.getConfiguration('glualint', doc.uri);
-        const runOn = config.get<string>('run');
-
-        if (runOn === 'onSave') {
+        if (utils.getRunMode(doc.uri) === 'onSave') {
             this.lintDocument(doc);
         }
     }
@@ -176,6 +180,48 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         this.lintUri(doc.uri, doc.getText());
     }
 
+    private setStatusReady() {
+        this.statusItem.text = '$(check) glualint';
+        this.statusItem.detail = 'glualint active';
+        this.statusItem.severity = vscode.LanguageStatusSeverity.Information;
+        this.statusItem.command = {
+            title: 'Lint Document',
+            command: 'glualint.lint'
+        };
+    }
+
+    private setStatusError(executable: string) {
+        this.statusItem.text = '$(error) glualint';
+        this.statusItem.detail = `Failed to find '${executable}' executable`;
+        this.statusItem.severity = vscode.LanguageStatusSeverity.Error;
+        this.statusItem.command = {
+            title: 'Configure Linter Path',
+            command: 'workbench.action.openSettings',
+            arguments: ['glualint.linter']
+        };
+    }
+
+    private setupLintProcess(lintProcess: LintProcess, onExitCallback: (stdOut: string, code: number) => void): boolean {
+        lintProcess.onError(err => {
+            if (err && err.code === 'ENOENT') {
+                this.setStatusError(lintProcess.executable);
+            }
+        });
+
+        if (!lintProcess.isValid()) {
+            this.setStatusError(lintProcess.executable);
+            vscode.window.showErrorMessage('Failed to create linter process.');
+            return false;
+        }
+
+        lintProcess.onExit((_url, stdOut, code) => {
+            this.setStatusReady();
+            onExitCallback(stdOut, code);
+        });
+
+        return true;
+    }
+
     private lintFolder(folder: string, uris: vscode.Uri[]) {
         const args = ['lint', ...utils.getCustomConfigArgs(uris[0])];
         for (const file of uris) {
@@ -183,14 +229,9 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         }
 
         const lintProcess: LintProcess = new LintProcess(uris[0], args);
-        if (!lintProcess.isValid()) {
-            vscode.window.showErrorMessage('Failed to create linter process.');
+        if (!this.setupLintProcess(lintProcess, (stdOut, code) => this.onReceiveDiagnostics(uris, stdOut, code))) {
             return;
         }
-
-        lintProcess.onExit((_url, stdOut, code) => {
-            this.onReceiveDiagnostics(uris, stdOut, code);
-        });
     }
 
     private queuedLints: vscode.Uri[] = [];
@@ -242,14 +283,10 @@ export default class GLuaLintingProvider implements vscode.Disposable {
         const args = ['lint', '--stdin', ...utils.getCustomConfigArgs(docUri)];
 
         const lintProcess: LintProcess = new LintProcess(docUri, args);
-        if (!lintProcess.isValid()) {
-            vscode.window.showErrorMessage('Failed to create linter process.');
+        if (!this.setupLintProcess(lintProcess, (stdOut, code) => this.onReceiveDiagnostics([docUri], stdOut, code))) {
             return;
         }
 
-        lintProcess.onExit((url, stdOut, code) => {
-            this.onReceiveDiagnostics([url], stdOut, code);
-        });
         lintProcess.write(textBuf);
 
         // Allows us to track when the linter is done via the promise returned by this function

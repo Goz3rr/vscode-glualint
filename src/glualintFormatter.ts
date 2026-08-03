@@ -5,19 +5,37 @@ import * as utils from './utils';
 import LintProcess from './LintProcess';
 
 export default class GLuaLintFormatter implements vscode.DocumentFormattingEditProvider, vscode.DocumentRangeFormattingEditProvider {
+    private providerDisposables: vscode.Disposable[] = [];
+
     public activate(subscriptions: vscode.Disposable[]) {
+        subscriptions.push(vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('glualint.activeLanguages')) {
+                this.registerProviders(subscriptions);
+            }
+        }));
+
+        this.registerProviders(subscriptions);
+    }
+
+    private registerProviders(subscriptions: vscode.Disposable[]) {
+        this.providerDisposables.forEach(d => d.dispose());
+        this.providerDisposables = [];
+
         const activeLanguages = utils.getActiveLanguages();
 
         activeLanguages.forEach(lang => {
-            subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider({
+            const documentFormatting = vscode.languages.registerDocumentFormattingEditProvider({
                 scheme: '*',
                 language: lang,
-            }, this));
+            }, this);
 
-            subscriptions.push(vscode.languages.registerDocumentRangeFormattingEditProvider({
+            const rangeFormatting = vscode.languages.registerDocumentRangeFormattingEditProvider({
                 scheme: '*',
                 language: lang,
-            }, this));
+            }, this);
+
+            this.providerDisposables.push(documentFormatting, rangeFormatting);
+            subscriptions.push(documentFormatting, rangeFormatting);
         });
     }
 

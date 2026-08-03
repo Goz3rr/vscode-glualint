@@ -8,8 +8,10 @@ export default class LintProcess {
     private Process: ChildProcess;
 
     public StdOut: string = '';
+    public readonly executable: string;
 
     private ExitFunc?: (doc: vscode.Uri, stdOut: string, exitCode: number) => void;
+    private ErrorFunc?: (error: any) => void;
     private PromiseFunc?: () => void;
     private document: vscode.Uri;
 
@@ -17,7 +19,7 @@ export default class LintProcess {
         this.document = docUri;
 
         const config = vscode.workspace.getConfiguration('glualint', docUri);
-        const executable = config.get<string>('linter') || 'glualint';
+        this.executable = config.get<string>('linter') || 'glualint';
         const workingDirectoryMode = config.get<string>('workingDirectory') ?? 'file';
         const options: SpawnOptions = {};
 
@@ -34,13 +36,16 @@ export default class LintProcess {
             options.cwd = path.dirname(docUri.fsPath);
         }
 
-        this.Process = spawn(executable, args, options);
+        this.Process = spawn(this.executable, args, options);
 
         this.Process.on('error', (error: any) => {
+            if (this.ErrorFunc) {
+                this.ErrorFunc(error);
+            }
             if (error && error.code === 'ENOENT') {
-                vscode.window.showErrorMessage(`Failed to find '${executable}'. Are you sure it's in your path?`);
+                vscode.window.showErrorMessage(`Failed to find '${this.executable}'. Are you sure it's in your path?`);
             } else {
-                vscode.window.showErrorMessage(`${executable} error: ${error?.message || error}`);
+                vscode.window.showErrorMessage(`${this.executable} error: ${error?.message || error}`);
             }
         });
 
@@ -56,6 +61,10 @@ export default class LintProcess {
                 this.PromiseFunc();
             }
         });
+    }
+
+    onError(func: (error: any) => void) {
+        this.ErrorFunc = func;
     }
 
     static parseDiagnostics(stdOut: string): Record<string, vscode.Diagnostic[]> {
@@ -78,6 +87,21 @@ export default class LintProcess {
                 text,
                 type === 'Warning' ? vscode.DiagnosticSeverity.Warning : vscode.DiagnosticSeverity.Error
             );
+
+            const lowerText = text.toLowerCase();
+            const tags: vscode.DiagnosticTag[] = [];
+
+            if (lowerText.includes('unused') || lowerText.includes('never used') || lowerText.includes('unreachable') || lowerText.includes('redundant')) {
+                tags.push(vscode.DiagnosticTag.Unnecessary);
+            }
+
+            if (lowerText.includes('deprecated')) {
+                tags.push(vscode.DiagnosticTag.Deprecated);
+            }
+
+            if (tags.length > 0) {
+                diagnostic.tags = tags;
+            }
 
             if (!diagnostics[file]) {
                 diagnostics[file] = [];
