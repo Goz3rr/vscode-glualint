@@ -16,12 +16,21 @@ export default class LintProcess {
     constructor(docUri: vscode.Uri, args: string[] = []) {
         this.document = docUri;
 
-        const config = vscode.workspace.getConfiguration('glualint');
+        const config = vscode.workspace.getConfiguration('glualint', docUri);
         const executable = config.get<string>('linter') || 'glualint';
+        const workingDirectoryMode = config.get<string>('workingDirectory') ?? 'file';
         const options: SpawnOptions = {};
 
+        if (workingDirectoryMode === 'workspace') {
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(docUri) ?? vscode.workspace.workspaceFolders?.[0];
+            // uri.fsPath is only valid for the file scheme
+            if (workspaceFolder && workspaceFolder.uri.scheme === 'file') {
+                options.cwd = workspaceFolder.uri.fsPath;
+            }
+        }
+
         // uri.fsPath is only valid for the file scheme
-        if (docUri.scheme === 'file') {
+        if (!options.cwd && docUri.scheme === 'file') {
             options.cwd = path.dirname(docUri.fsPath);
         }
 

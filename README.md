@@ -15,6 +15,10 @@ The linter should now be active for any lua and glua files
 `glualint.activeLanguages`: Languages IDs to activate the linter for (`lua` and `glua` are supported, defaults to both)  
 `glualint.run`: When to run the linter executable (`onSave`, `onType` or `manual`, defaults to `onType`)
 `glualint.allFiles`: Run the linter on all files in the workspace, even if they are closed. Bypasses `glualint.activeLanguages` setting.
+`glualint.config`: Points to a custom `glualint.json` configuration file path.
+`glualint.workingDirectory`: Override how to set the working directory for the glualint process (`file` or `workspace`, defaults to `file`).
+  - `file`: Uses the directory of the file being linted.
+  - `workspace`: Uses the root workspace folder. Will not automatically discover nested glualint config files in subdirectories.
 
 Also see [configuring glualint](https://github.com/FPtje/GLuaFixer/blob/master/README.md#configuring-glualint)
 
