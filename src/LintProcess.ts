@@ -22,7 +22,10 @@ export default class LintProcess {
         const config = vscode.workspace.getConfiguration(constants.CONFIG_SECTION, docUri);
         this.executable = config.get<string>(constants.CONFIG_LINTER) || 'glualint';
         const workingDirectoryMode = config.get<string>(constants.CONFIG_WORKING_DIRECTORY) ?? 'file';
-        const options: SpawnOptions = {};
+        const options: SpawnOptions = {
+            // Use shell so that PATH entries are resolved correctly
+            shell: true,
+        };
 
         if (workingDirectoryMode === 'workspace') {
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(docUri) ?? vscode.workspace.workspaceFolders?.[0];
@@ -143,7 +146,7 @@ export default class LintProcess {
         const targetExecutable = executable || vscode.workspace.getConfiguration(constants.CONFIG_SECTION).get<string>(constants.CONFIG_LINTER) || 'glualint';
         return new Promise<string | undefined>((resolve) => {
             try {
-                const proc = spawn(targetExecutable, ['--version']);
+                const proc = spawn(targetExecutable, ['--version'], { shell: true });
                 let stdout = '';
                 proc.stdout?.on('data', data => { stdout += data.toString(); });
                 proc.on('error', () => resolve(undefined));
